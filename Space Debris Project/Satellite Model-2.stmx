@@ -1,0 +1,723 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xmile version="1.0" xmlns="http://docs.oasis-open.org/xmile/ns/XMILE/v1.0" xmlns:isee="http://iseesystems.com/XMILE">
+	<header>
+		<smile version="1.0" namespace="std, isee"/>
+		<name>Satellite Model</name>
+		<uuid>a47d714c-23f3-4158-8bec-f84f0b227500</uuid>
+		<vendor>isee systems, inc.</vendor>
+		<product version="2.1.5" isee:build_number="2562" isee:saved_by_v1="true" lang="en">Stella Architect</product>
+	</header>
+	<sim_specs isee:sim_duration="1.5" isee:simulation_delay="0.0166667" isee:restore_on_start="false" method="Euler" time_units="Years" isee:instantaneous_flows="false" isee:loop_scores="true" isee:loop_exhaustive_allowed="1000">
+		<start>2010</start>
+		<stop>2100</stop>
+		<dt reciprocal="true">6</dt>
+	</sim_specs>
+	<isee:prefs live_at_start="true" show_module_prefix="true" live_update_on_drag="true" show_restore_buttons="false" layer="model" interface_scale_ui="true" interface_max_page_width="10000" interface_max_page_height="10000" interface_min_page_width="0" interface_min_page_height="0" rerun_on_structure_change="false" saved_runs="5" keep="false" rifp="true"/>
+	<isee:multiplayer_settings include_chat="true" allow_observers="false" advance_time_increment="1" max_advance_time_in_ms="0" observer_start_page="home_page" enabled="false"/>
+	<isee:time_formats default_format="Builtin">
+		<isee:time_format name="Builtin" type="adaptive"/>
+	</isee:time_formats>
+	<default_format/>
+	<model_units>
+		<unit name="Dimensionless">
+			<eqn>1</eqn>
+			<alias>dmnl</alias>
+			<alias>unitless</alias>
+			<alias>fraction</alias>
+		</unit>
+		<unit name="Years">
+			<eqn/>
+			<alias>yr</alias>
+			<alias>year</alias>
+		</unit>
+	</model_units>
+	<model>
+		<variables>
+			<stock name="Retired\nSatellites">
+				<eqn>1650</eqn>
+				<inflow>Retired</inflow>
+				<outflow>Orbital_Decay</outflow>
+				<outflow>&quot;Break-ups&quot;</outflow>
+				<outflow>RS_Collisions</outflow>
+				<non_negative/>
+				<units>satellites</units>
+			</stock>
+			<flow name="Retired">
+				<eqn>Active_Satellites/Satellite_Lifespan</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<flow name="Orbital Decay">
+				<eqn>Retired_Satellites/Decay_Time</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<aux name="Satellite Lifespan">
+				<eqn>IF(TIME&lt;=2015)
+THEN(15)
+ELSE(8)</eqn>
+				<units>years</units>
+			</aux>
+			<aux name="Decay Time">
+				<eqn>25</eqn>
+				<units>years</units>
+			</aux>
+			<stock name="Yearly satellite\ndemand">
+				<doc>The total number of satellites launched per year</doc>
+				<eqn>10</eqn>
+				<inflow>net_demand_growth</inflow>
+				<non_negative/>
+				<units>satellites/year</units>
+			</stock>
+			<flow name="net demand\ngrowth">
+				<doc>The number of new satellites demanded by the market</doc>
+				<eqn>Yearly_satellite_demand*Fractional_net_growth_rate</eqn>
+				<non_negative/>
+				<units>satellites/year/Years</units>
+			</flow>
+			<aux name="new era growth\nswitch">
+				<doc>This is an on/off switch that activates the new space era. In the old era, the launch rate was fairly constant. The new space era is represented by a period of rapid and extensive growth in the launching of new, smaller telecommunications satellites.</doc>
+				<eqn>IF(TIME&lt;=2012)
+THEN(0)
+ELSE(baseline_demand_growth_rate)</eqn>
+				<units>1/year</units>
+			</aux>
+			<aux name="Room for\ncontinued\ngrowth 1">
+				<eqn>1-&quot;Ratio:_annual_to_potential_demand&quot;</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<aux name="Ratio: annual\nto potential demand">
+				<eqn>Yearly_satellite_demand/Potential_demand</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<aux name="Fractional\nnet growth rate">
+				<eqn>new_era_growth_switch*Room_for_continued_growth_1</eqn>
+				<units>1/year</units>
+			</aux>
+			<aux name="Potential\ndemand">
+				<doc>The potential launch demand for the future is estimated at 1700 satellites per year. 
+
+Euroconsult estimates that the demand for satellites will average 1700/year by 2030. 
+
+See https://digital-platform.euroconsult-ec.com/wp-content/uploads/2022/01/Extract_Sat_Built_2021.pdf?t=61d89925c3e67
+</doc>
+				<eqn>25000</eqn>
+				<units>satellites/year</units>
+			</aux>
+			<aux name="baseline\ndemand growth rate">
+				<doc>This is the rate of growth in yearly demand for satellites</doc>
+				<eqn>.4</eqn>
+				<units>1/year</units>
+			</aux>
+			<stock name="Active Satellites">
+				<doc>The total number of active satellites in Earth orbit. This assumes that all satellites are in LEO.</doc>
+				<eqn>1170</eqn>
+				<inflow>Launches</inflow>
+				<outflow>Retired</outflow>
+				<outflow>At_End_Of_Life</outflow>
+				<outflow>ASAT_Explosions</outflow>
+				<outflow>AS_Collisions</outflow>
+				<non_negative/>
+				<units>satellites</units>
+			</stock>
+			<flow name="Launches">
+				<eqn>Yearly_satellite_demand</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<flow name="At End Of Life">
+				<eqn>IF(TIME&lt;=2030)
+THEN(0)
+ELSE(Active_Satellites/Satellite_Age*Deorbit_Compliance_Rate*Policy_Switch)</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<stock name="Intentionally Deorbiting">
+				<eqn>3</eqn>
+				<inflow>At_End_Of_Life</inflow>
+				<outflow>out_of_orbit</outflow>
+				<non_negative/>
+				<units>satellites</units>
+			</stock>
+			<flow name="out of orbit">
+				<eqn>Intentionally_Deorbiting/deorbit_time</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<aux name="deorbit time">
+				<eqn>2</eqn>
+				<units>years</units>
+			</aux>
+			<aux name="Satellite Age">
+				<eqn>8</eqn>
+				<units>years</units>
+			</aux>
+			<aux name="Policy Switch">
+				<eqn>0</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<aux name="Deorbit Compliance Rate">
+				<eqn>.1</eqn>
+				<units>Dimensionless</units>
+			</aux>
+			<flow name="ASAT Explosions">
+				<eqn>PULSE(ASAT_Explosion_Constant, 2015,  7)</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<flow name="AS Collisions">
+				<eqn>Active_Satellites*Collision_Rate</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<aux name="ASAT Explosion Constant">
+				<eqn>1/6</eqn>
+				<units>satellites</units>
+			</aux>
+			<stock name="Damaged Active Satellites">
+				<eqn>0</eqn>
+				<inflow>AS_Collisions</inflow>
+				<inflow>ASAT_Explosions</inflow>
+				<non_negative/>
+				<units>satellites</units>
+			</stock>
+			<stock name="Damaged Retired Satellites">
+				<eqn>0</eqn>
+				<inflow>&quot;Break-ups&quot;</inflow>
+				<inflow>RS_Collisions</inflow>
+				<non_negative/>
+				<units>satellites</units>
+			</stock>
+			<flow name="Break-ups">
+				<eqn>Retired_Satellites*&quot;Break-up_Rate&quot;</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<flow name="RS Collisions">
+				<eqn>Retired_Satellites*Collision_Rate</eqn>
+				<non_negative/>
+				<units>satellites/year</units>
+			</flow>
+			<aux name="Collision Rate">
+				<eqn>.01*Collision_Rate_Multiplier</eqn>
+				<units>1/year</units>
+			</aux>
+			<aux name="Active Satellites Damaged Each Year">
+				<eqn>ASAT_Explosions + AS_Collisions</eqn>
+				<isee:summing/>
+				<units>satellites/year</units>
+			</aux>
+			<aux name="Break-up Rate">
+				<eqn>.01</eqn>
+				<units>1/years</units>
+			</aux>
+			<stock name="Space Debris Fragment">
+				<eqn>10500</eqn>
+				<inflow>ASATs</inflow>
+				<inflow>B&apos;ups</inflow>
+				<inflow>Collisions</inflow>
+				<outflow>Small_Fragment_Decay</outflow>
+				<outflow>Large_Fragment_Decay</outflow>
+				<non_negative/>
+				<units>fragments</units>
+			</stock>
+			<flow name="ASATs">
+				<eqn>ASAT_Explosions*Fragments_1</eqn>
+				<non_negative/>
+				<units>fragments/Years</units>
+			</flow>
+			<flow name="B'ups">
+				<eqn>&quot;Break-ups&quot;*Fragments_2</eqn>
+				<non_negative/>
+				<units>fragments/Years</units>
+			</flow>
+			<flow name="Collisions">
+				<eqn>Satellite_Collisions*Fragments_3</eqn>
+				<non_negative/>
+				<units>fragments/Years</units>
+			</flow>
+			<aux name="Satellite Collisions">
+				<eqn>AS_Collisions + RS_Collisions</eqn>
+				<isee:summing/>
+				<units>satellites/year</units>
+			</aux>
+			<aux name="Fragments 1">
+				<eqn>125</eqn>
+				<units>fragments/satellites</units>
+			</aux>
+			<aux name="Fragments 2">
+				<eqn>75</eqn>
+				<units>fragments/satellites</units>
+			</aux>
+			<aux name="Fragments 3">
+				<eqn>50</eqn>
+				<units>fragments/satellites</units>
+			</aux>
+			<flow name="Small Fragment Decay">
+				<eqn>(Space_Debris_Fragment*0.5)/SF_Decay_Time</eqn>
+				<non_negative/>
+				<units>fragments/Years</units>
+			</flow>
+			<flow name="Large Fragment Decay">
+				<eqn>Space_Debris_Fragment/LF_Decay_Time</eqn>
+				<non_negative/>
+				<units>fragments/Years</units>
+			</flow>
+			<aux name="SF Decay Time">
+				<eqn>5</eqn>
+				<units>years</units>
+			</aux>
+			<aux name="LF Decay Time">
+				<eqn>9</eqn>
+				<units>years</units>
+			</aux>
+			<aux name="Collision Rate Multiplier">
+				<eqn>Space_Debris_Fragment</eqn>
+				<gf>
+					<xscale min="0" max="500000"/>
+					<yscale min="0" max="2"/>
+					<ypts>0,0.1224,0.2577,0.4072,0.5725,0.7551,0.9569,1.18,1.426,1.699,2</ypts>
+				</gf>
+				<units>1/year</units>
+			</aux>
+		</variables>
+		<views>
+			<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+				<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+				<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+					<isee:series_styles>
+						<isee:series_style color="blue" thickness="1"/>
+						<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF7F00" thickness="1"/>
+						<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#FF007F" thickness="1"/>
+						<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+						<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+						<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+						<isee:series_style color="#C8C8C8" thickness="1"/>
+					</isee:series_styles>
+				</graph>
+				<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				<button color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595"/>
+				<isee:annotation color="black" background="#E0E0E0" font_size="12pt" border_width="thin" border_style="solid" transparent="false" corner_radius="0" isee:flat="false" icon_side="top" isee:highlight_on_hover="false" isee:highlight_color="#959595" popup_corner_radius="0" popup_background_color="#FFFECF"/>
+				<slider color="#66CC66" background="#E0E0E0" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" vertical="false" isee:fancy_appearance="false" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:dual_slider color="#66CC66" background="silver" font_size="12pt" num_ticks="3" label_side="top" wrap_title="true" isee:show_hover_tip="when_deciding" input_expands="true" input_width="100"/>
+				<isee:sim_speed_slider color="black" background="white"/>
+				<isee:time_slider color="#E95F74" background="silver"/>
+				<isee:pie_input color="black" background="white" font_size="12pt" legend_position="bottom" isee:transparent="false"/>
+				<knob color="#66CC66" background="#E0E0E0" font_size="12pt" label_side="bottom" wrap_title="true"/>
+				<numeric_input color="black" background="#E0E0E0" font_size="12pt" label_side="left" wrap_title="true" input_expands="false" input_width="100"/>
+				<switch color="black" background="#E0E0E0" font_size="12pt" label_side="top" wrap_title="true" isee:appearance="switch" isee:on_color="green"/>
+				<options color="black" background="white" appearance="radio-buttons" arrangement="vertical"/>
+				<graphical_input color="black" background="#E0E0E0" font_size="12pt" isee:show_hover_tip="true"/>
+				<group_input color="black" background="#E0E0E0" font_size="12pt"/>
+				<lamp color="black" background="white" font_size="9pt"/>
+				<gauge color="black" background="white" font_size="9pt" needle_color="#F09F72" bar_color="#EEEEEE" bar_progress_color="black" appearance="radial" num_major_ticks="11" num_minor_ticks="11" show_numeric_value="true"/>
+				<isee:spatial_map color="black" background="white" font_size="12pt"/>
+				<isee:animation_object color="black" background="white" font_size="12pt"/>
+				<isee:navigation_widget color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_color="#999999" border_width="thin" border_style="solid" item_spacing="6" appearance="tabs" corner_radius="4" selected_item_color="black" selected_item_background="white" item_background="#DDDDDD"/>
+				<isee:shape color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid" opacity="1" transparent_background="true"/>
+				<isee:selector color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+				<isee:iframe color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt" border_width="thin" border_style="solid"/>
+				<isee:financial_table color="black" background="#E0E0E0" text_align="right" font_size="12pt" hide_border="false" auto_fit="true" first_column_width="250" other_column_width="100" header_font_style="normal" header_font_weight="bold" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="14pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+			</style>
+			<view isee:show_pages="false" background="white" page_width="1035" page_height="795" isee:page_cols="3" isee:page_rows="3" isee:scroll_x="583.75" isee:scroll_y="20" zoom="80" isee:popup_graphs_are_comparative="true" isee:enable_non_negative_highlights="false" type="stock_flow">
+				<style color="black" background="white" font_style="normal" font_weight="normal" text_decoration="none" text_align="center" vertical_text_align="center" font_color="black" font_family="Arial" font_size="10pt" padding="2" border_color="black" border_width="thin" border_style="none">
+					<stock color="blue" background="white" font_color="blue" font_size="12pt" label_side="top">
+						<shape type="rectangle" width="45" height="35"/>
+					</stock>
+					<flow color="blue" background="white" font_color="blue" font_size="12pt" label_side="bottom"/>
+					<isee:placeholder color="#228B22" background="white" font_color="#228B22" font_size="12pt" label_side="bottom"/>
+					<module color="blue" background="white" font_color="blue" font_size="12pt" label_side="top">
+						<shape type="rectangle" width="55" height="45"/>
+					</module>
+					<aux color="blue" background="white" font_color="blue" font_size="12pt" label_side="bottom">
+						<shape type="circle" radius="18"/>
+					</aux>
+					<group color="red" background="white" font_color="red" font_size="12pt"/>
+					<connector color="#FF007F" background="white" font_color="#FF007F" font_size="9pt" isee:thickness="1"/>
+					<text_box color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<isee:loop_indicator color="black" background="white" text_align="left" vertical_text_align="top" font_size="12pt"/>
+					<numeric_display color="blue" background="white" font_size="9pt" isee:transparent="false"/>
+					<graph color="black" background="white" font_size="12pt" axis_color="#666666" grid_color="#C8C8C8" isee:graph_area_color="white" legend_position="bottom" isee:transparent="false" isee:hide_border="false" axis_title_font_style="normal" axis_title_font_weight="normal" axis_title_text_decoration="none" axis_title_text_align="center" axis_title_vertical_text_align="center" axis_title_font_color="black" axis_title_font_family="Arial" axis_title_font_size="12pt" axis_title_text_padding="2" axis_title_text_border_color="black" axis_title_text_border_width="thin" axis_title_text_border_style="none" axis_label_font_style="normal" axis_label_font_weight="normal" axis_label_text_decoration="none" axis_label_text_align="center" axis_label_vertical_text_align="center" axis_label_font_color="black" axis_label_font_family="Arial" axis_label_font_size="9pt" axis_label_text_padding="2" axis_label_text_border_color="black" axis_label_text_border_width="thin" axis_label_text_border_style="none">
+						<isee:series_styles>
+							<isee:series_style color="blue" thickness="1"/>
+							<isee:series_style color="red" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="fuchsia" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="#008F44" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF7F00" thickness="1"/>
+							<isee:series_style color="#7F00FF" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#0CA0FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="lime" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#FF007F" thickness="1"/>
+							<isee:series_style color="aqua" thickness="1" pen_style="dot_dashed"/>
+							<isee:series_style color="#F586FF" thickness="1" pen_style="dotted"/>
+							<isee:series_style color="black" thickness="1" pen_style="dashed"/>
+							<isee:series_style color="#C8C8C8" thickness="1"/>
+						</isee:series_styles>
+					</graph>
+					<table color="black" background="#E0E0E0" text_align="right" font_size="12pt" orientation="vertical" wrap_text="false" isee:auto_fit="true" isee:use_alternate_row_colors="false" isee:unlimited_table_length="false" blank_column_width="80" column_width="160" interval="1" report_balances="beginning" report_flows="instantaneous" header_font_style="normal" header_font_weight="normal" header_text_decoration="none" header_text_align="center" header_vertical_text_align="center" header_font_color="black" header_font_family="Arial" header_font_size="12pt" header_text_padding="2" header_text_border_color="black" header_text_border_width="thin" header_text_border_style="none"/>
+				</style>
+				<stock label_side="center" x="1330.57" y="511.452" width="101.19" height="87.2619" name="Retired\nSatellites"/>
+				<flow font_size="10pt" label_side="bottom" x="1213.24" y="558.833" name="Retired">
+					<pts>
+						<pt x="1107.9" y="558.833"/>
+						<pt x="1330.57" y="558.833"/>
+					</pts>
+				</flow>
+				<flow font_size="10pt" label_side="center" x="1386.25" y="417.684" name="Orbital Decay">
+					<pts>
+						<pt x="1386.25" y="511.452"/>
+						<pt x="1386.25" y="302.917"/>
+					</pts>
+				</flow>
+				<connector uid="23" angle="51.656">
+					<from>Retired_Satellites</from>
+					<to>Orbital_Decay</to>
+				</connector>
+				<aux label_side="top" x="1239.33" y="519.25" name="Satellite Lifespan"/>
+				<connector uid="27" angle="236.601">
+					<from>Satellite_Lifespan</from>
+					<to>Retired</to>
+				</connector>
+				<aux label_side="top" x="1486.47" y="341.167" name="Decay Time"/>
+				<stock label_side="center" x="616.778" y="599.042" width="104.306" height="50.0694" name="Yearly satellite\ndemand"/>
+				<flow label_side="top" x="568.028" y="628.833" name="net demand\ngrowth">
+					<pts>
+						<pt x="519.278" y="628.833"/>
+						<pt x="616.778" y="628.833"/>
+					</pts>
+				</flow>
+				<aux background="silver" label_side="left" label_angle="225" x="438.722" y="614.833" name="new era growth\nswitch"/>
+				<aux font_size="14pt" label_side="bottom" x="569.833" y="726.611" name="Room for\ncontinued\ngrowth 1"/>
+				<aux font_size="13pt" label_side="right" x="678.722" y="699.944" name="Ratio: annual\nto potential demand"/>
+				<connector uid="29" angle="299.279">
+					<from>Yearly_satellite_demand</from>
+					<to>&quot;Ratio:_annual_to_potential_demand&quot;</to>
+				</connector>
+				<connector uid="30" angle="208.523">
+					<from>&quot;Ratio:_annual_to_potential_demand&quot;</from>
+					<to>Room_for_continued_growth_1</to>
+				</connector>
+				<aux label_side="left" label_angle="225" x="509.833" y="669.389" name="Fractional\nnet growth rate"/>
+				<connector uid="31" angle="47.0454">
+					<from>Fractional_net_growth_rate</from>
+					<to>net_demand_growth</to>
+				</connector>
+				<connector uid="32" angle="295.889">
+					<from>new_era_growth_switch</from>
+					<to>Fractional_net_growth_rate</to>
+				</connector>
+				<connector uid="33" angle="244.634">
+					<from>Yearly_satellite_demand</from>
+					<to>net_demand_growth</to>
+				</connector>
+				<connector uid="34" angle="164.055">
+					<from>Room_for_continued_growth_1</from>
+					<to>Fractional_net_growth_rate</to>
+				</connector>
+				<aux font_size="14pt" label_side="center" x="701.5" y="748.833" name="Potential\ndemand"/>
+				<connector uid="35" angle="141.805">
+					<from>Potential_demand</from>
+					<to>&quot;Ratio:_annual_to_potential_demand&quot;</to>
+				</connector>
+				<aux label_side="left" label_angle="225" x="420.722" y="549.125" name="baseline\ndemand growth rate"/>
+				<connector uid="36" angle="315.116">
+					<from>baseline_demand_growth_rate</from>
+					<to>new_era_growth_switch</to>
+				</connector>
+				<connector uid="40" angle="217.362">
+					<from>Decay_Time</from>
+					<to>Orbital_Decay</to>
+				</connector>
+				<stock label_side="center" x="1010.32" y="514.776" width="97.58" height="88.1136" name="Active Satellites"/>
+				<connector uid="44" angle="28.4948">
+					<from>Active_Satellites</from>
+					<to>Retired</to>
+				</connector>
+				<flow x="832.161" y="533.667" name="Launches">
+					<pts>
+						<pt x="654" y="533.667"/>
+						<pt x="1010.32" y="533.667"/>
+					</pts>
+				</flow>
+				<connector uid="115" angle="57.5443">
+					<from>Yearly_satellite_demand</from>
+					<to>Launches</to>
+				</connector>
+				<flow x="1062.5" y="420.054" name="At End Of Life">
+					<pts>
+						<pt x="1062.5" y="514.776"/>
+						<pt x="1062.5" y="313.333"/>
+					</pts>
+				</flow>
+				<stock label_side="center" x="1011.23" y="240" width="110.833" height="73.3333" name="Intentionally Deorbiting"/>
+				<flow label_side="left" label_angle="135" x="1067" y="188.333" name="out of orbit">
+					<pts>
+						<pt x="1067" y="240"/>
+						<pt x="1067" y="115.667"/>
+					</pts>
+				</flow>
+				<aux label_side="center" x="1144.17" y="192.5" name="deorbit time"/>
+				<aux x="1155.83" y="359.167" name="Satellite Age"/>
+				<aux x="940.833" y="315.834" name="Policy Switch"/>
+				<aux x="893.333" y="393.959" name="Deorbit Compliance Rate"/>
+				<connector uid="133" angle="120.342">
+					<from>Active_Satellites</from>
+					<to>At_End_Of_Life</to>
+				</connector>
+				<connector uid="134" angle="213.119">
+					<from>Satellite_Age</from>
+					<to>At_End_Of_Life</to>
+				</connector>
+				<connector uid="135" angle="10.4915">
+					<from>Policy_Switch</from>
+					<to>At_End_Of_Life</to>
+				</connector>
+				<connector uid="136" angle="13.627">
+					<from>Deorbit_Compliance_Rate</from>
+					<to>At_End_Of_Life</to>
+				</connector>
+				<connector uid="137" angle="206.565">
+					<from>deorbit_time</from>
+					<to>out_of_orbit</to>
+				</connector>
+				<connector uid="138" angle="45.0539">
+					<from>Intentionally_Deorbiting</from>
+					<to>out_of_orbit</to>
+				</connector>
+				<flow x="1012.57" y="682.277" name="ASAT Explosions">
+					<pts>
+						<pt x="1012.57" y="602.889"/>
+						<pt x="1012.57" y="773.666"/>
+					</pts>
+				</flow>
+				<flow label_side="bottom" x="1105.65" y="682.277" name="AS Collisions">
+					<pts>
+						<pt x="1105.65" y="602.889"/>
+						<pt x="1105.65" y="773.666"/>
+					</pts>
+				</flow>
+				<aux label_side="top" x="923.944" y="635" name="ASAT Explosion Constant"/>
+				<stock label_side="center" x="1009.15" y="773.666" width="115" height="91.6667" name="Damaged Active Satellites"/>
+				<stock label_side="center" x="1331.16" y="765.333" width="103.333" height="99.1667" name="Damaged Retired Satellites"/>
+				<flow x="1326.91" y="667.023" width="18" height="18" name="Break-ups">
+					<pts>
+						<pt x="1335.91" y="598.714"/>
+						<pt x="1335.91" y="765.333"/>
+					</pts>
+				</flow>
+				<flow x="1429.51" y="676.023" name="RS Collisions">
+					<pts>
+						<pt x="1429.51" y="598.714"/>
+						<pt x="1429.51" y="765.333"/>
+					</pts>
+				</flow>
+				<aux label_side="center" x="1231.23" y="775.223" name="Collision Rate"/>
+				<aux x="892.5" y="853.334" name="Active Satellites Damaged Each Year"/>
+				<connector uid="140" isee:thickness="1" polarity="+" isee:polarity_placement="inside" angle="1.65549">
+					<from>ASAT_Explosion_Constant</from>
+					<to>ASAT_Explosions</to>
+				</connector>
+				<connector uid="141" polarity="+" isee:polarity_placement="outside" angle="143.494">
+					<from>Collision_Rate</from>
+					<to>AS_Collisions</to>
+				</connector>
+				<connector uid="142" polarity="+" isee:polarity_placement="outside" angle="339.898">
+					<from>Active_Satellites</from>
+					<to>AS_Collisions</to>
+				</connector>
+				<aux x="1226.25" y="635" name="Break-up Rate"/>
+				<connector uid="143" polarity="+" isee:polarity_placement="outside" angle="10.1755">
+					<from>&quot;Break-up_Rate&quot;</from>
+					<to>&quot;Break-ups&quot;</to>
+				</connector>
+				<connector uid="144" polarity="+" isee:polarity_placement="outside" angle="266.669">
+					<from>Retired_Satellites</from>
+					<to>&quot;Break-ups&quot;</to>
+				</connector>
+				<connector uid="145" polarity="+" isee:polarity_placement="outside" angle="329.339">
+					<from>Retired_Satellites</from>
+					<to>RS_Collisions</to>
+				</connector>
+				<connector uid="146" polarity="+" isee:polarity_placement="inside" angle="138.122">
+					<from>
+						<alias uid="139"/>
+					</from>
+					<to>RS_Collisions</to>
+				</connector>
+				<stock label_side="center" x="1127.25" y="1052.5" width="387.5" height="168.75" name="Space Debris Fragment"/>
+				<flow x="1129.5" y="975.25" name="ASATs">
+					<pts>
+						<pt x="1129.5" y="898"/>
+						<pt x="1129.5" y="1052.5"/>
+					</pts>
+				</flow>
+				<flow x="1325" y="970.25" name="B'ups">
+					<pts>
+						<pt x="1325" y="888"/>
+						<pt x="1325" y="1052.5"/>
+					</pts>
+				</flow>
+				<flow x="1510.5" y="970.25" name="Collisions">
+					<pts>
+						<pt x="1510.5" y="888"/>
+						<pt x="1510.5" y="1052.5"/>
+					</pts>
+				</flow>
+				<aux x="1410.41" y="901" name="Satellite Collisions"/>
+				<aux x="1192" y="1001" name="Fragments 1"/>
+				<aux x="1392.41" y="1023" name="Fragments 2"/>
+				<aux x="1614" y="1023" name="Fragments 3"/>
+				<connector uid="149" angle="4.08562">
+					<from>
+						<alias uid="147"/>
+					</from>
+					<to>ASATs</to>
+				</connector>
+				<connector uid="150" angle="138.013">
+					<from>Fragments_1</from>
+					<to>ASATs</to>
+				</connector>
+				<connector uid="151" angle="17.6501">
+					<from>
+						<alias uid="148"/>
+					</from>
+					<to>B&apos;ups</to>
+				</connector>
+				<connector uid="152" angle="114.624">
+					<from>Fragments_2</from>
+					<to>B&apos;ups</to>
+				</connector>
+				<connector uid="153" angle="7.21695">
+					<from>Satellite_Collisions</from>
+					<to>Collisions</to>
+				</connector>
+				<connector uid="154" angle="135">
+					<from>Fragments_3</from>
+					<to>Collisions</to>
+				</connector>
+				<flow x="1129.5" y="1318.63" name="Small Fragment Decay">
+					<pts>
+						<pt x="1129.5" y="1221.25"/>
+						<pt x="1129.5" y="1437"/>
+					</pts>
+				</flow>
+				<flow x="1510.5" y="1321.13" name="Large Fragment Decay">
+					<pts>
+						<pt x="1510.5" y="1221.25"/>
+						<pt x="1510.5" y="1442"/>
+					</pts>
+				</flow>
+				<aux label_side="center" x="1208" y="1252" name="SF Decay Time"/>
+				<aux label_side="center" x="1399" y="1259" name="LF Decay Time"/>
+				<connector uid="157" angle="233.13">
+					<from>SF_Decay_Time</from>
+					<to>Small_Fragment_Decay</to>
+				</connector>
+				<connector uid="158" angle="330.875">
+					<from>LF_Decay_Time</from>
+					<to>Large_Fragment_Decay</to>
+				</connector>
+				<connector uid="159" angle="199.168">
+					<from>Space_Debris_Fragment</from>
+					<to>Small_Fragment_Decay</to>
+				</connector>
+				<connector uid="160" angle="344.872">
+					<from>Space_Debris_Fragment</from>
+					<to>Large_Fragment_Decay</to>
+				</connector>
+				<connector uid="161" polarity="+" isee:polarity_placement="outside" angle="124.439">
+					<from>Space_Debris_Fragment</from>
+					<to>Collision_Rate_Multiplier</to>
+				</connector>
+				<aux label_side="center" x="1231.23" y="845" name="Collision Rate Multiplier"/>
+				<connector uid="162" polarity="+" isee:polarity_placement="outside" angle="65.2301">
+					<from>Collision_Rate_Multiplier</from>
+					<to>Collision_Rate</to>
+				</connector>
+				<isee:loop_indicator text="R1" orientation="clockwise" uid="172" x="592.143" y="637.833" width="30" height="30"/>
+				<isee:loop_indicator text="B1" orientation="clockwise" uid="173" x="566.314" y="678.389" width="30" height="30"/>
+				<alias color="blue" background="white" font_style="italic" uid="139" x="1521.83" y="695.167" width="18" height="18">
+					<shape type="circle" radius="18"/>
+					<of>Collision_Rate</of>
+				</alias>
+				<alias color="blue" background="white" font_style="italic" uid="147" x="1032" y="933.67" width="18" height="18">
+					<of>ASAT_Explosions</of>
+				</alias>
+				<alias color="blue" background="white" font_style="italic" uid="148" x="1260" y="886" width="18" height="18">
+					<of>&quot;Break-ups&quot;</of>
+				</alias>
+			</view>
+			<view background="white" page_width="1066" page_height="600" home_view="true" type="interface">
+				<style/>
+				<stacked_container x="32" y="23.5" width="826" height="481.5">
+					<graph width="826" height="481.5" type="time_series" show_grid="false" isee:tick_type="none" include_units_in_legend="false" plot_numbers="false" isee:label_pie_slices="false" num_x_grid_lines="0" num_y_grid_lines="0" num_x_labels="5" num_y_labels="3" isee:fill_intensity="0.1" isee:allow_zero_axis="true" left_axis_multi_scale="false" left_axis_auto_scale="true" left_include_units="true" right_axis_multi_scale="false" right_axis_auto_scale="true" right_include_units="true">
+						<plot isee:immediately_update_on_user_input="true" color="blue" isee:keep_zero_visible="true" pen_width="1" index="0" show_y_axis="true">
+							<entity name="Active_Satellites"/>
+						</plot>
+						<plot isee:immediately_update_on_user_input="true" color="red" pen_style="dot_dashed" isee:keep_zero_visible="true" pen_width="1" index="1" show_y_axis="true">
+							<entity name="Damaged_Active_Satellites"/>
+						</plot>
+						<plot isee:immediately_update_on_user_input="true" color="fuchsia" pen_style="dotted" isee:keep_zero_visible="true" pen_width="1" index="2" show_y_axis="true">
+							<entity name="Retired_Satellites"/>
+						</plot>
+						<plot isee:immediately_update_on_user_input="true" color="#008F44" pen_style="dashed" isee:keep_zero_visible="true" pen_width="1" index="3" show_y_axis="true">
+							<entity name="Damaged_Retired_Satellites"/>
+						</plot>
+						<plot isee:immediately_update_on_user_input="true" color="#FF7F00" isee:keep_zero_visible="true" pen_width="1" index="4" show_y_axis="true">
+							<entity name="Space_Debris_Fragment"/>
+						</plot>
+						<plot isee:immediately_update_on_user_input="true" color="#7F00FF" pen_style="dot_dashed" isee:keep_zero_visible="true" pen_width="1" index="5" show_y_axis="true">
+							<entity name="Intentionally_Deorbiting"/>
+						</plot>
+					</graph>
+				</stacked_container>
+				<button label="" x="642" y="514" width="217" height="62">
+					<actions>
+						<action>start</action>
+					</actions>
+				</button>
+				<switch x="444" y="521.5" width="198" height="58" title="Mandatory Deorbit Policy" show_name="true">
+					<entity name="Policy_Switch"/>
+					<reset_to after="never">0</reset_to>
+				</switch>
+				<isee:time_slider interactive="true" x="35.5" y="509.5" width="375" height="82"/>
+				<knob x="0" y="0" width="125" height="119" isee:navigate_to="false" show_name="true">
+					<reset_to after="never">0</reset_to>
+				</knob>
+				<knob x="888.5" y="204" width="154" height="151" isee:navigate_to="false" show_name="true">
+					<entity name="Satellite_Age"/>
+					<reset_to after="never">0</reset_to>
+				</knob>
+				<knob x="893" y="56" width="145" height="148" isee:navigate_to="false" show_name="true">
+					<entity name="Deorbit_Compliance_Rate"/>
+					<reset_to after="never">0</reset_to>
+				</knob>
+				<knob x="893" y="346" width="145" height="156" isee:navigate_to="false" show_name="true">
+					<entity name="deorbit_time"/>
+					<reset_to after="never">0</reset_to>
+				</knob>
+			</view>
+			<isee:templates>
+				<view background="white" page_width="1066" page_height="600" type="template">
+					<style/>
+				</view>
+			</isee:templates>
+			<isee:stories/>
+		</views>
+	</model>
+	<isee:controls>
+		<isee:control priority="interactive" name="Deorbit_Compliance_Rate" value="0.1"/>
+		<isee:control priority="interactive" name="Policy_Switch" value="1"/>
+		<isee:control priority="interactive" name="Satellite_Age" value="2"/>
+		<isee:control priority="interactive" name="deorbit_time" value="2.08"/>
+	</isee:controls>
+</xmile>
+
